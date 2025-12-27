@@ -9,13 +9,12 @@ from src.config import Config
 import csv
 import logging
 from dataclasses import asdict
-from pathlib import Path
-
 
 logger = logging.getLogger(__file__)
 
 
 class GenerateReport:
+    """Generate a spreadsheet report with names and addresses of owners."""
 
     def __init__(self, unit_list_csv_file: str, member_contact_info_csv_file: str, output_path: str = None):
         self.unit_list_csv_file: str = unit_list_csv_file
@@ -27,14 +26,14 @@ class GenerateReport:
         self.state_name_map: Dict[str, str] = state_name_map()
 
     def generate(self) -> None:
-        df = self.merge()
+        df: pd.DataFrame = self.merge()
         data: List[dict] = df.to_dict(orient='records')
         data = self._process_owner_names(data=data)
 
         address_avery_labels = self.create_avery_labels(data=data)
 
         # Ensure output directory exists
-        output_dir = os.path.dirname(self.output_path)
+        output_dir: str = os.path.dirname(self.output_path)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
 
@@ -54,9 +53,10 @@ class GenerateReport:
         return data
 
     def merge(self) -> pd.DataFrame:
+        """Merge two spreadsheet files into one to get all information we need."""
         # Load the CSV files
-        df1 = pd.read_csv(self.unit_list_csv_file)
-        df2 = pd.read_csv(self.member_contact_info_csv_file)
+        df1: pd.DataFrame = pd.read_csv(self.unit_list_csv_file)
+        df2: pd.DataFrame = pd.read_csv(self.member_contact_info_csv_file)
 
         # Merge on the common column
         merged_df = pd.merge(df1, df2, on=Config.PRIMARY_KEY, how='left')
@@ -93,7 +93,7 @@ class GenerateReport:
     def parse_unit_address(self, unit_address: str) -> Address:
         street_address, city_state_zip = unit_address.split(sep=Config.SEPARATOR_NEWLINE)
         house_number, street_name = street_address.split(sep=' ', maxsplit=Config.MAX_SPLIT_ADDRESS)
-        city_name, state_zip = city_state_zip.split(',', 1)
+        city_name, state_zip = city_state_zip.split(sep=',', maxsplit=Config.MAX_SPLIT_ADDRESS)
         state_name, zip_code = state_zip.split()
 
         return Address(
@@ -105,6 +105,7 @@ class GenerateReport:
         )
 
     def create_avery_labels(self, data: List[dict]) -> List[AddressAveryLabel]:
+        """Create text that be printed on stickers for envelop addresses."""
         avery_labels: list = []
         for item in data:
             logger.info(f'item = {item}')
