@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carmel Views HOA Assistant</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f4f0;
+    color: #1a1a18;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 760px;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 500;
+    color: #1a1a18;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: #6b6b67;
+  }
+
+  .doc-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  .pill {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid #b5d4f4;
+    color: #185fa5;
+    background: #e6f1fb;
+  }
+
+  /* API key section */
+  #api-section {
+    width: 100%;
+    max-width: 760px;
+    background: #fff;
+    border: 1px solid #e0dfd8;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  #api-section label {
+    font-size: 13px;
+    color: #6b6b67;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  #api-section a {
+    color: #185fa5;
+    text-decoration: none;
+  }
+
+  #api-section a:hover { text-decoration: underline; }
+
+  .api-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  #api-key {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #d0cfc8;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+    background: #fafaf8;
+    color: #1a1a18;
+  }
+
+  #api-key:focus {
+    outline: none;
+    border-color: #378add;
+  }
+
+  #save-key {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #d0cfc8;
+    background: transparent;
+    font-size: 13px;
+    cursor: pointer;
+    color: #1a1a18;
+  }
+
+  #save-key:hover { background: #f0efe8; }
+
+  .key-status {
+    font-size: 12px;
+    margin-top: 6px;
+    color: #3b6d11;
+  }
+
+  .key-status.error { color: #a32d2d; }
+
+  /* Chat area */
+  #chat-wrap {
+    width: 100%;
+    max-width: 760px;
+    background: #fff;
+    border: 1px solid #e0dfd8;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    height: 560px;
+  }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .msg {
+    max-width: 85%;
+    font-size: 14px;
+    line-height: 1.65;
+    border-radius: 12px;
+    padding: 10px 14px;
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: #e6f1fb;
+    border: 1px solid #b5d4f4;
+    border-radius: 12px 12px 2px 12px;
+    color: #1a1a18;
+  }
+
+  .msg.bot {
+    align-self: flex-start;
+    background: #f5f4f0;
+    border: 1px solid #e0dfd8;
+    border-radius: 2px 12px 12px 12px;
+    color: #1a1a18;
+  }
+
+  .msg.error {
+    background: #fcebeb;
+    border-color: #f7c1c1;
+    color: #a32d2d;
+  }
+
+  .msg p { margin-bottom: 0.5em; }
+  .msg p:last-child { margin-bottom: 0; }
+  .msg strong { font-weight: 500; }
+
+  .typing {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    padding: 14px;
+    align-self: flex-start;
+    background: #f5f4f0;
+    border: 1px solid #e0dfd8;
+    border-radius: 2px 12px 12px 12px;
+  }
+
+  .typing span {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #888780;
+    animation: pulse 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: 0.2; }
+    40% { opacity: 1; }
+  }
+
+  /* Suggestions */
+  #suggestions {
+    padding: 0 1.25rem 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sug {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #d0cfc8;
+    background: transparent;
+    color: #6b6b67;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    text-align: left;
+  }
+
+  .sug:hover {
+    background: #f5f4f0;
+    color: #1a1a18;
+    border-color: #888780;
+  }
+
+  /* Input area */
+  #input-area {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #e0dfd8;
+    display: flex;
+    gap: 8px;
+  }
+
+  #q {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid #d0cfc8;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fafaf8;
+    color: #1a1a18;
+    resize: none;
+    line-height: 1.4;
+  }
+
+  #q:focus {
+    outline: none;
+    border-color: #378add;
+  }
+
+  #send {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid #d0cfc8;
+    background: transparent;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    color: #1a1a18;
+    white-space: nowrap;
+  }
+
+  #send:hover { background: #f5f4f0; }
+  #send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  footer {
+    margin-top: 1rem;
+    font-size: 12px;
+    color: #888780;
+    text-align: center;
+    max-width: 760px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Carmel Views HOA Assistant</h1>
+  <p class="subtitle">Ask questions about your governing documents. Answers cite specific sections.</p>
+  <div class="doc-pills">
+    <span class="pill">CC&amp;Rs (2017)</span>
+    <span class="pill">Bylaws</span>
+    <span class="pill">Davis-Stirling Act</span>
+  </div>
+</header>
+
+<div id="api-section">
+  <label>
+    Running via local proxy. API key is passed to <code>proxy.js</code> on the command line and never exposed to the browser.
+    Need a key? <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+  </label>
+</div>
+
+<div id="chat-wrap">
+  <div id="messages">
+    <div class="msg bot">Hello! Enter your API key above, then ask me anything about the Carmel Views CC&amp;Rs, Bylaws, or the Davis-Stirling Act. I'll cite exactly where my answers come from.</div>
+  </div>
+
+  <div id="suggestions">
+    <button class="sug" onclick="ask(this.textContent)">Can I build a fence over 6 feet?</button>
+    <button class="sug" onclick="ask(this.textContent)">How are assessments collected?</button>
+    <button class="sug" onclick="ask(this.textContent)">What are the view protection rules?</button>
+    <button class="sug" onclick="ask(this.textContent)">How many board members are there?</button>
+    <button class="sug" onclick="ask(this.textContent)">Can I park a boat in my driveway?</button>
+    <button class="sug" onclick="ask(this.textContent)">What regulations exist regarding vacation rentals?</button>
+  </div>
+
+  <div id="input-area">
+    <textarea id="q" rows="1" placeholder="Ask a question about your HOA documents…"></textarea>
+    <button id="send" onclick="sendMsg()">Ask →</button>
+  </div>
+</div>
+
+<footer>
+  This tool provides information based on HOA governing documents only. It is not legal advice.
+  Consult a licensed attorney for specific legal questions.
+</footer>
+
+<script>
+const DOCS = `=== DOCUMENT 1: CC&Rs (Second Restated Declaration of Covenants, Conditions and Restrictions for Carmel Views, December 2017) ===
+
+ARTICLE I – Definitions
+(a) Association = Carmel Views Community Association
+(b) The Properties = Carmel Views No. 1–4
+(c) Common Properties = areas designated on subdivision maps for common use
+(d) Entryway Parcels = two parcels near Rancho Rio Vista Drive / Carmel Valley Road intersection
+(e) Lot = any plot of land on recorded subdivision map except Common Properties
+(f) Owner = record owner of fee simple title to any Lot
+
+ARTICLE II – Additions to Existing Property
+New property may be added by 75% affirmative vote. Maximum 200 total eligible votes.
+
+ARTICLE III – Membership and Voting Rights
+Section 1: Every Owner of a fee interest is automatically a member. Membership ceases when Lot is sold.
+Section 2: One vote per Lot. If multiple owners of one Lot, they share the one vote.
+
+ARTICLE IV – Covenant for Maintenance Assessments
+Section 1: All Lot owners covenant to pay (1) annual assessments and (2) special assessments. Assessments become a continuing lien on the property.
+Section 2: Assessment funds used for health, safety, welfare, recreation, and maintenance of Properties and Common Properties.
+Section 3: Annual assessment fixed by Board of Directors in January each year. Maximum was $100/Lot/year originally; members may change maximum by 75% affirmative vote with 30-60 days notice.
+Section 4: Special assessments for capital improvements and fire abatement require 75% affirmative vote with 30-60 days written notice.
+Section 5: Annual assessments due March 1. Bear interest at legal rate if unpaid. Association may record notice of lien. Lien subordinate to mortgages/deeds of trust. Lien expires after 5 years (extendable 5 more). Association may foreclose via Sections 2924, 2924b, 2924c Civil Code.
+Section 6: Exempt from assessments: government easement land, Common Properties, tax-exempt property.
+
+ARTICLE V – Special Provisions
+Section 1 – Restrictions on Lots:
+(a) No business/commercial enterprise that detracts from residential character.
+(b) No building/improvement unless conforms to Monterey County building codes.
+(c) No fence exceeding 6 feet in height. Patio fences attached to houses within side/rear yard setback lines are NOT subject to height limitation.
+(d) No Lot may be subdivided into more than one building site. Lot line adjustments permitted if resulting lots are at least 20,000 sq ft.
+(e) Only one single-family residence per Lot. Maximum one detached guest cottage per Lot.
+(f) No trailer, boat, truck, motor home, RV, tractor, or commercial passenger vehicle (except pickup trucks or vehicles used by residents as regular transportation) parked on any street or driveway. Such vehicles must be stored in an enclosure or screened from public street and neighboring dwellings (except during loading/unloading or construction).
+(g) No motor vehicle repair except emergency/temporary nature on street or driveway. No inoperable vehicles (no operating engine, wheels, or current registration) stored outside enclosure.
+(h) No Lot used as dumping ground. Sanitary containers allowed. Sub-surface compost pits allowed in rear of Lot, 10+ feet from property line.
+(i) No horses, cows, or other farm animals on any Lot.
+(j) No trees/shrubs planted or permitted to grow so as to limit sight distance at street intersections.
+(k) No unsightly underbrush on vacant Lots (except canyon areas). Board may notify Owner of deficiencies; if not corrected within 60 days, Board may correct and sue for costs.
+(l) Front, side, and rear yard setbacks per Monterey County Zoning ordinance.
+(m) At least 2 off-street parking spaces outside garage/carport required at time of construction. No vehicle parked in yard visible from street or neighboring Lot.
+
+Section 2 – Restrictions on Common Properties:
+(a) No residential or commercial structure on Parcel "C" in Carmel Views No. 1.
+(b) No commercial activity on Common Properties or Entryway Parcels.
+(c) Recreational facilities for members, families, and guests only.
+(d) No cutting trees/brush without prior written permission from Board.
+(e) Activities only as determined by Board.
+(f) No hazardous or obnoxious sports/activities in common areas.
+
+Section 3 – Control of Pets:
+(a) Dogs must be restrained per County ordinances when off Owner's Lot.
+(b) Each person responsible for their own pet's conduct.
+
+Section 4 – Preservation of Views:
+(a) No new structure or addition shall block the principal view from a neighboring residence.
+(b) No trees/shrubs shall be planted or permitted to grow to obstruct principal view from a neighboring Lot or residence. If trees on "Tree Lot" obstruct view from "View Lot":
+  (i) Owner of View Lot notifies Owner of Tree Lot.
+  (ii) Owners must meet and confer within 60 days.
+  (iii) If owners refuse or can't agree, submitted to Board for mediation.
+  (iv) Tree Lot owner must cooperate and allow access. View Lot owner gives 10 days written notice before work.
+  (v) Cost of restoring view borne by Owner of View Lot. Work by licensed contractor with commercially reasonable insurance. Permits obtained by View Lot owner.
+
+ARTICLE VI – General Provisions
+Section 1: CC&Rs run with land until January 1, 2036, then auto-extend 10-year periods unless majority vote to terminate (must be recorded 3+ years before termination).
+Section 2: Enforcement by law, equity, or lien. Failure to enforce is not a waiver. Attorneys' fees to prevailing party.
+Section 3: Severability.
+
+ARTICLE VII – Use of Common Properties
+Section 1: Members entitled to use Common Properties subject to:
+(a) 75% vote to borrow money to improve Common Properties.
+(b) Board may protect Common Properties from foreclosure.
+(c) Board may suspend rights for unpaid assessments or up to 30 days for infraction (after hearing with 10-60 days notice).
+(d) Board may charge reasonable fees for Common Properties facilities.
+(e) 75% vote to dedicate Common Properties to public agency.
+(f) Association may procure insurance.
+
+ARTICLE VIII – Amendment
+75% affirmative vote required to amend any provision.
+
+=== DOCUMENT 2: BYLAWS OF CARMEL VIEWS COMMUNITY ASSOCIATION ===
+
+ARTICLE I: Incorporates Declaration by reference. Declaration provisions can only be amended as prescribed in Declaration.
+
+ARTICLE II: Principal office at home of incumbent president, mailing address P.O. Box 22052, Carmel, CA 93922. Board may change office within Monterey County.
+
+ARTICLE III: Membership, Voting Rights and Notices
+Section 1: Membership requirements per CC&Rs Article III.
+Section 2: No formal application or resignation. Members must give written notice of commencement/termination to Board and keep address current. Notices given by postcard or letter, mailed 10-90 days in advance. Single notice to family unit or one of several co-owners is sufficient.
+Section 3: Rights subject to payment of assessments.
+Section 4: Voting rights per CC&Rs Article III.
+
+ARTICLE IV: Use of Common Properties
+Section 1: Members entitled to use Common Properties per CC&Rs Article VII.
+Section 2: Member may delegate use rights to family members residing on Properties or tenants, by notifying Secretary in writing with name and relationship.
+
+ARTICLE V: Association Purposes & Powers
+Association cannot spend funds directly on individual lots (except attorney fees for enforcement, or improvements benefiting the Association as a whole).
+
+ARTICLE VI: Meetings of Members
+Section 1: Annual meeting in January each year. Board notifies owners 10-90 days in advance.
+Section 2: Special meetings called by President, VP, Secretary, Treasurer, any two Board members, or written request of 5% of voting members. Notice 10-90 days in advance.
+Section 3: Votes cast in person or by proxy. Proxies in writing, filed with Secretary before meeting. Proxy valid max 11 months. Proxy terminates if member becomes ineligible.
+Section 4: Quorum = majority of voting power. If quorum not present, meeting may be adjourned 48 hours-30 days later; at adjourned meeting quorum = 25% of voting power. Majority of quorum vote sufficient for most actions.
+
+ARTICLE VII: Election of Directors
+Section 1: Cumulative voting allowed.
+Section 2: Entire Board or individual director removable by majority vote.
+
+ARTICLE VIII: Board of Directors
+Section 1: Board = 6 directors, 2-year terms. 3 elected in odd years, 3 in even years. Tie votes resolved by last previous president still residing in Properties as ex officio director for that vote only.
+Section 2: Vacancy filled by remaining directors until next annual meeting.
+Section 3: Board powers: call meetings; appoint/remove officers and employees; establish and collect assessments; adopt rules for Common Properties; exercise all delegated powers; interpret and enforce governing documents.
+Section 4: Board duties: keep complete records; supervise officers; fix assessment amounts 20+ days before due; send written notice 10+ days before assessment due; issue assessment certificates upon demand.
+
+ARTICLE IX: Meetings of Directors
+Section 1: Regular meetings at least quarterly. No notice required.
+Section 2: Special meetings with 3+ days notice.
+Section 3: Quorum = majority of Board. Majority of quorum required for action.
+
+ARTICLE X: Officers
+Section 1: President, Vice President, Secretary, Treasurer. President and VP must be Board members.
+Section 2: Officers chosen by majority Board vote.
+Section 3: President presides at all meetings; signs notes, checks, leases, deeds.
+Section 5: Secretary records votes and minutes; maintains member registry.
+Section 6: Treasurer receives and deposits funds; disburses per Board resolution; signs checks (also signed by President or VP).
+Section 7: Treasurer causes annual financial statement; presented to members at annual meeting; mailed to each owner within 30 days of Board receipt. New board mails annual budget to property owners by March 31.
+
+ARTICLE XI: Books, Accounts & Records
+Available for inspection by any member during reasonable business hours.
+
+ARTICLE XIV: Amendments
+Bylaws amended by majority vote at annual or special meeting. Declaration controls over Bylaws if conflict.
+
+=== DOCUMENT 3: Davis-Stirling Common Interest Development Act (AB 805, California Civil Code Part 5, operative January 1, 2014) ===
+
+GOVERNING DOCUMENTS HIERARCHY (§4205):
+Law > Declaration > Articles of Incorporation > Bylaws > Operating Rules.
+
+DEFINITIONS:
+- Association: nonprofit corporation managing a common interest development (§4080)
+- Board: board of directors (§4085)
+- Governing documents: declaration, bylaws, operating rules, articles of incorporation (§4150)
+- Member: owner of a separate interest (§4160)
+- Planned development: development with common area and power to levy assessments (§4175)
+
+OPERATING RULES (§4340–4370):
+Valid only if: in writing, within board authority, not inconsistent with governing law/documents, adopted in good faith, reasonable. For rules affecting use of common area, member discipline, architectural standards, or election procedures: 30 days general notice before adoption, 15 days notice after. Members owning 5%+ may call special vote to reverse a rule change within 30 days of notice.
+
+PROTECTED USES (§4700–4765):
+- Members may display US flag (§4705)
+- May post noncommercial signs/flags in separate interest (§4710)
+- Must be allowed to keep at least one pet (§4715)
+- Satellite dishes 36 inches or less in diameter cannot be prohibited (§4725)
+- Cannot prohibit low-water plants or water-efficient landscaping (§4735)
+- Cannot prohibit rental of separate interest if rental prohibition adopted after owner acquired title (§4740)
+- Cannot prohibit electric vehicle charging stations in owner's parking space (§4745)
+- Cannot arbitrarily restrict marketing/sale of property (§4730)
+
+BOARD MEETINGS – Open Meeting Act (§4900–4955):
+- Board cannot act outside a board meeting (§4910)
+- 4 days notice required for board meetings (§4920)
+- Any member may attend board meetings except executive sessions (§4925)
+- Board may not discuss items not on agenda at nonemergency meetings (§4930)
+- Executive sessions permitted for: litigation, contracts, member discipline, personnel, payment plans, foreclosure decisions (§4935)
+- Meeting minutes available to members within 30 days (§4950)
+
+MEMBER ELECTIONS (§5100–5145):
+- Secret ballot required for: assessments requiring member vote, director elections/removals, governing document amendments, exclusive use of common area grants (§5100)
+- Independent inspector of elections required (§5110)
+- Ballots mailed 30+ days before deadline (§5115)
+- Association funds may not be used for campaign purposes (§5135)
+
+RECORD INSPECTION (§5200–5240):
+Members may inspect: financial documents, executed contracts, tax returns, reserve accounts, agendas and minutes, membership list, governing documents. Access within 10 business days (current year) or 30 days (prior 2 years).
+
+ANNUAL REPORTS (§5300–5320):
+Annual budget report required 30-90 days before end of fiscal year: pro forma operating budget, reserve fund summary, reserve funding plan, assessment info, insurance summary.
+Annual policy statement required 30-90 days before end of fiscal year.
+
+CONFLICT OF INTEREST (§5350):
+Directors may not vote on: their own discipline, assessments against themselves for damages, their own payment plan, foreclosure on their own interest, changes to their own property, exclusive use grants to themselves.
+
+ASSESSMENTS (§5600–5740):
+- Must levy assessments sufficient to perform obligations (§5600)
+- Annual increases >20% or special assessments >5% of gross budget require member approval (§5605)
+- Assessments delinquent 15 days after due (§5650)
+- Late charge: 10% of delinquent amount or $10, whichever is greater (§5650)
+- Interest: up to 12% annually starting 30 days after due (§5650)
+- Payments applied first to assessments owed, then fees/costs/interest (§5655)
+- 30 days certified mail notice required before recording lien (§5660)
+- Cannot foreclose if delinquent amount under $1,800 (exclusive of fees/interest) unless over 12 months delinquent (§5720)
+- Nonjudicial foreclosure: 90-day right of redemption after sale (§5715)
+
+DISPUTE RESOLUTION (§5900–5975):
+- Association must provide fair, reasonable, expeditious internal dispute resolution (§5905)
+- Before filing civil enforcement action, parties must attempt alternative dispute resolution (§5930)
+- CC&Rs are enforceable equitable servitudes (§5975)
+- Prevailing party in enforcement action entitled to attorney's fees (§5975)
+
+INSURANCE AND LIABILITY (§5800):
+Volunteer directors/officers not personally liable beyond insurance for good-faith acts within scope of duties if association maintains: $500K general liability + D&O insurance (100 or fewer units) or $1M (more than 100 units).
+
+CONSTRUCTION DEFECTS (§6000–6150):
+Before suing builder, association must serve Notice of Commencement of Legal Proceedings and complete prelitigation dispute resolution process (up to 180 days).`;
+
+const SYSTEM_PROMPT = `You are an expert assistant for the Carmel Views Community Association HOA in Monterey County, California. You have access to three governing documents: the CC&Rs (2017), the Bylaws, and the Davis-Stirling Common Interest Development Act (California law).
+
+Answer homeowner questions accurately and helpfully. Always:
+1. Give a clear, direct answer first.
+2. Cite the specific document and section (e.g., "CC&Rs Article V, Section 1(c)" or "Davis-Stirling §5605").
+3. If multiple documents are relevant, note each.
+4. If something is not covered in these documents, say so clearly.
+5. Do not give legal advice — note when a homeowner should consult an attorney for their specific situation.
+6. Keep answers concise but complete. Use short paragraphs rather than long blocks of text.
+
+The documents are provided below.
+
+${DOCS}`;
+
+let history = [];
+
+function ask(text) {
+  document.getElementById('q').value = text;
+  sendMsg();
+}
+
+const msgs = document.getElementById('messages');
+const input = document.getElementById('q');
+const btn = document.getElementById('send');
+
+function addMsg(role, html, isError) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'user' ? 'user' : 'bot') + (isError ? ' error' : '');
+  div.innerHTML = html;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const div = document.createElement('div');
+  div.className = 'typing';
+  div.id = 'typing';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function formatAnswer(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n\n+/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>').replace(/$/, '</p>');
+}
+
+async function sendMsg() {
+  const q = input.value.trim();
+  if (!q) return;
+
+  input.value = '';
+  btn.disabled = true;
+
+  addMsg('user', q.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+  history.push({ role: 'user', content: q });
+
+  showTyping();
+
+  try {
+    console.log('Sending request to local proxy...');
+    let response;
+    try {
+      response = await fetch('/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1024,
+          system: SYSTEM_PROMPT,
+          messages: history
+        })
+      });
+    } catch (networkErr) {
+      console.error('Network-level fetch error:', networkErr);
+      throw new Error('Could not reach the local proxy. Make sure you started it with: node proxy.js YOUR_API_KEY');
+    }
+
+    console.log('Response status:', response.status, response.statusText);
+    const data = await response.json();
+    console.log('Response data:', data);
+
+    if (!response.ok) {
+      throw new Error(`API error ${response.status}: ${data.error?.message || JSON.stringify(data)}`);
+    }
+
+    const answer = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    history.push({ role: 'assistant', content: answer });
+
+    removeTyping();
+    addMsg('bot', formatAnswer(answer));
+
+  } catch (err) {
+    console.error('Full error:', err);
+    removeTyping();
+    addMsg('bot', 'Error: ' + err.message, true);
+    history.pop();
+  }
+
+  btn.disabled = false;
+  input.focus();
+}
+
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMsg();
+  }
+});
+</script>
+</body>
+</html>
