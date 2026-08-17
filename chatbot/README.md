@@ -2,12 +2,15 @@
 
 A local chatbot for answering homeowner questions about the Carmel Views CC&Rs, Bylaws, and the Davis-Stirling Act. Runs entirely on your computer — no accounts, no subscriptions, no data sent anywhere except the Anthropic API.
 
+Works the same way on macOS and Linux (Windows isn't covered here).
+
 ---
 
 ## Files
 
 - `carmel-views-hoa-chatbot.html` — the chatbot application
 - `proxy.js` — local proxy server (handles the API key and bypasses browser security restrictions)
+- `env.example` — template for your own config file (API key, paths, port)
 - `README.md` — this file
 
 ---
@@ -22,7 +25,7 @@ Your API key looks like: `sk-ant-api03-...`
 
 ### 2. Install nvm and Node.js
 
-nvm lets you install and manage Node.js versions. Open Terminal and run:
+nvm lets you install and manage Node.js versions. This step is identical on macOS and Linux. Open Terminal and run:
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
@@ -50,7 +53,8 @@ Every time you want to use the chatbot, open Terminal and run:
 
 ```bash
 cd /path/to/this/folder
-node proxy.js sk-ant-your-key-here
+export ANTHROPIC_API_KEY=sk-ant-your-key-here
+node proxy.js
 ```
 
 Then open your browser and go to:
@@ -63,6 +67,100 @@ To stop the server when you're done, press `Ctrl+C` in Terminal.
 
 ---
 
+## Running automatically (optional)
+
+If you'd rather not export the key and start the server by hand every time, you can register it as a background service that starts at login. Both approaches below read the same config file, so do this part first regardless of platform:
+
+```bash
+cd /path/to/this/folder
+cp env.example ~/.config/cvca-chatbot/env
+chmod 600 ~/.config/cvca-chatbot/env
+```
+
+Edit `~/.config/cvca-chatbot/env` and fill in:
+
+- `ANTHROPIC_API_KEY` — your real key
+- `NODE_BIN` — the absolute path to `node`, found with `command -v node` (nvm-installed node has no fixed location, so this can't be looked up automatically)
+- `PROJECT_DIR` — the absolute path to this folder
+
+`PORT`, `HOST`, and `ALLOWED_ORIGINS` already have sensible defaults in the example file — leave them unless you have a reason to change them.
+
+### Linux (systemd)
+
+Create `~/.config/systemd/user/cvcachatbot.service`:
+
+```ini
+[Unit]
+Description=Chatbot proxy
+
+[Service]
+EnvironmentFile=%h/.config/cvca-chatbot/env
+ExecStart=/bin/sh -c '"$NODE_BIN" "$PROJECT_DIR/proxy.js"'
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target
+```
+
+Then:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now cvcachatbot
+systemctl --user status cvcachatbot --no-pager
+```
+
+Logs: `journalctl --user -u cvcachatbot -f`
+
+### macOS (launchd)
+
+Create `~/Library/LaunchAgents/com.cvca.chatbot.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.cvca.chatbot</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>set -a; . "$HOME/.config/cvca-chatbot/env"; set +a; exec "$NODE_BIN" "$PROJECT_DIR/proxy.js"</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/cvcachatbot.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/cvcachatbot.log</string>
+</dict>
+</plist>
+```
+
+launchd has no equivalent of systemd's `EnvironmentFile=`, so the plist sources the same config file itself (`set -a` exports every variable it sets before running node).
+
+Then:
+
+```bash
+launchctl load ~/Library/LaunchAgents/com.cvca.chatbot.plist
+```
+
+Logs: `cat /tmp/cvcachatbot.log`
+
+To apply changes after editing the plist:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.cvca.chatbot.plist
+launchctl load ~/Library/LaunchAgents/com.cvca.chatbot.plist
+```
+
+---
+
 ## How it works
 
 The proxy server does two things:
@@ -70,7 +168,7 @@ The proxy server does two things:
 1. Serves the HTML chatbot to your browser at `localhost:3000`
 2. Forwards your questions to the Anthropic API, adding your API key server-side
 
-This means your API key is never exposed in the browser — it stays in the Terminal session only. The browser talks to `localhost`, not to Anthropic directly, which avoids the CORS security restrictions that browsers enforce on direct API calls.
+This means your API key is never exposed in the browser — it stays server-side, read from an environment variable rather than passed on the command line. The browser talks to `localhost`, not to Anthropic directly, which avoids the CORS security restrictions that browsers enforce on direct API calls. The proxy also only accepts cross-origin requests from the chatbot page itself, and only serves files from within this folder.
 
 ---
 
