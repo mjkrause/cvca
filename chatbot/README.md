@@ -45,6 +45,20 @@ node --version
 npm --version
 ```
 
+### 3. Create your config file
+
+The chatbot reads its API key from a config file rather than a typed command, so the key never ends up in your shell history. Create it once:
+
+```bash
+cd /path/to/this/folder
+mkdir -p ~/.config/cvca-chatbot
+chmod 700 ~/.config/cvca-chatbot
+cp env.example ~/.config/cvca-chatbot/env
+chmod 600 ~/.config/cvca-chatbot/env
+```
+
+Open `~/.config/cvca-chatbot/env` in a text editor and fill in `ANTHROPIC_API_KEY` with your real key. Leave `NODE_BIN` and `PROJECT_DIR` for now — those are only needed if you set up the automatic background service below; `PORT`, `HOST`, and `ALLOWED_ORIGINS` already have sensible defaults.
+
 ---
 
 ## Starting the app
@@ -53,7 +67,7 @@ Every time you want to use the chatbot, open Terminal and run:
 
 ```bash
 cd /path/to/this/folder
-export ANTHROPIC_API_KEY=sk-ant-your-key-here
+set -a; source ~/.config/cvca-chatbot/env; set +a
 node proxy.js
 ```
 
@@ -65,25 +79,16 @@ http://localhost:3000/carmel-views-hoa-chatbot.html
 
 To stop the server when you're done, press `Ctrl+C` in Terminal.
 
+(`set -a` / `set +a` works the same way in bash and zsh, so this is identical on Linux and macOS.)
+
 ---
 
 ## Running automatically (optional)
 
-If you'd rather not export the key and start the server by hand every time, you can register it as a background service that starts at login. Both approaches below read the same config file, so do this part first regardless of platform:
+If you'd rather not start the server by hand every time, you can register it as a background service that starts at login. This reuses the config file created above — open `~/.config/cvca-chatbot/env` again and fill in the two fields you skipped earlier:
 
-```bash
-cd /path/to/this/folder
-cp env.example ~/.config/cvca-chatbot/env
-chmod 600 ~/.config/cvca-chatbot/env
-```
-
-Edit `~/.config/cvca-chatbot/env` and fill in:
-
-- `ANTHROPIC_API_KEY` — your real key
 - `NODE_BIN` — the absolute path to `node`, found with `command -v node` (nvm-installed node has no fixed location, so this can't be looked up automatically)
 - `PROJECT_DIR` — the absolute path to this folder
-
-`PORT`, `HOST`, and `ALLOWED_ORIGINS` already have sensible defaults in the example file — leave them unless you have a reason to change them.
 
 ### Linux (systemd)
 
